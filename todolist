@@ -1,0 +1,243 @@
+import 'package:flutter/material.dart';
+
+void main() {
+  runApp(const TodoApp());
+}
+
+// Task data model
+class Task {
+  String title;
+  bool isCompleted;
+
+  Task({required this.title, this.isCompleted = false});
+}
+
+class TodoApp extends StatelessWidget {
+  const TodoApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'To-Do List',
+      theme: ThemeData(colorSchemeSeed: Colors.deepPurple, useMaterial3: true),
+      home: const TodoPage(),
+    );
+  }
+}
+
+class TodoPage extends StatefulWidget {
+  const TodoPage({super.key});
+
+  @override
+  State<TodoPage> createState() => _TodoPageState();
+}
+
+class _TodoPageState extends State<TodoPage> {
+  final TextEditingController controller = TextEditingController();
+
+  List<Task> tasks = [];
+
+  // Count remaining tasks
+  int get remainingTasks => tasks.where((task) => !task.isCompleted).length;
+
+  // Add a new task
+  void addTask() {
+    String text = controller.text.trim();
+
+    if (text.isNotEmpty) {
+      setState(() {
+        tasks.add(Task(title: text));
+        controller.clear();
+      });
+    }
+  }
+
+  // Complete or uncomplete a task
+  void toggleTask(int index, bool? value) {
+    setState(() {
+      tasks[index].isCompleted = value ?? false;
+    });
+  }
+
+  // Delete a task
+  void deleteTask(int index) {
+    setState(() {
+      tasks.removeAt(index);
+    });
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F2FA),
+
+      appBar: AppBar(
+        title: const Text(
+          'My To-Do List',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        backgroundColor: Colors.deepPurple,
+        foregroundColor: Colors.white,
+      ),
+
+      body: Padding(
+        padding: const EdgeInsets.all(18),
+
+        child: Column(
+          children: [
+            // Remaining task counter
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.deepPurple,
+                borderRadius: BorderRadius.circular(15),
+              ),
+
+              child: Column(
+                children: [
+                  const Text(
+                    'Remaining Tasks',
+                    style: TextStyle(color: Colors.white70, fontSize: 17),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  Text(
+                    '$remainingTasks',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 35,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 25),
+
+            // Add task text field
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    decoration: InputDecoration(
+                      hintText: 'Enter a new task',
+                      filled: true,
+                      fillColor: Colors.white,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onSubmitted: (_) => addTask(),
+                  ),
+                ),
+
+                const SizedBox(width: 10),
+
+                IconButton(
+                  onPressed: addTask,
+                  icon: const Icon(Icons.add),
+                  color: Colors.white,
+                  iconSize: 30,
+                  style: IconButton.styleFrom(
+                    backgroundColor: Colors.deepPurple,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+
+            const SizedBox(height: 20),
+
+            // Task list
+            Expanded(
+              child: tasks.isEmpty
+                  ? const Center(
+                      child: Text(
+                        'No tasks yet!\nAdd your first task.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 18, color: Colors.grey),
+                      ),
+                    )
+                  : ListView.builder(
+                      itemCount: tasks.length,
+
+                      itemBuilder: (context, index) {
+                        Task task = tasks[index];
+
+                        return Dismissible(
+                          key: ObjectKey(task),
+                          direction: DismissDirection.endToStart,
+
+                          onDismissed: (direction) {
+                            deleteTask(index);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Task deleted')),
+                            );
+                          },
+
+                          background: Container(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            padding: const EdgeInsets.only(right: 20),
+                            alignment: Alignment.centerRight,
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.delete,
+                              color: Colors.white,
+                              size: 30,
+                            ),
+                          ),
+
+                          child: Card(
+                            margin: const EdgeInsets.only(bottom: 12),
+                            child: CheckboxListTile(
+                              value: task.isCompleted,
+
+                              onChanged: (value) {
+                                toggleTask(index, value);
+                              },
+
+                              title: Text(
+                                task.title,
+                                style: TextStyle(
+                                  fontSize: 16,
+                                  decoration: task.isCompleted
+                                      ? TextDecoration.lineThrough
+                                      : TextDecoration.none,
+                                  color: task.isCompleted
+                                      ? Colors.grey
+                                      : Colors.black,
+                                ),
+                              ),
+
+                              activeColor: Colors.deepPurple,
+                              controlAffinity: ListTileControlAffinity.leading,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
